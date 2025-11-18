@@ -1,8 +1,10 @@
+<!-- app/components/handler/error.vue -->
+
 <script setup>
 import { CircleAlert } from 'lucide-vue-next';
 
 defineProps({
-  error: {
+  message: {
     type: String,
     required: true,
   },
@@ -14,7 +16,7 @@ defineProps({
     <CircleAlert />
     <AlertTitle>Error!</AlertTitle>
     <AlertDescription>
-      {{ error }}
+      {{ message }}
     </AlertDescription>
   </Alert>
 </template>

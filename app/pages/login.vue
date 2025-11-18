@@ -65,7 +65,7 @@ const onSubmit = handleSubmit(async () => {
 
         <handler-error
           v-if="error"
-          :error="error.data.message"
+          :message="error.data.message"
         />
 
         <form
