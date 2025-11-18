@@ -62,11 +62,6 @@ const main = computed(() => {
 const settings = computed(() => {
   const baseSettings = [
     {
-      title: 'Cabang',
-      url: '/cabang',
-      icon: Building2,
-    },
-    {
       title: 'Materi Akademik',
       url: '#',
       icon: BookOpenText,
@@ -90,6 +85,11 @@ const settings = computed(() => {
       title: 'Jadwal Pelatihan',
       url: '#',
       icon: CalendarCheck2,
+    },
+    {
+      title: 'Manajemen Cabang',
+      url: '/cabang',
+      icon: Building2,
     },
   ];
 
