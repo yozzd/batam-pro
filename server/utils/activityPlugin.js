@@ -1,4 +1,4 @@
-// server/utils//activityPlugin.js
+// server/utils/activityPlugin.js
 
 import Activity from '../models/activity.js';
 
