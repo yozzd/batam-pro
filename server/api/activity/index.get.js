@@ -55,18 +55,19 @@ export default eventHandler({
           {
             path: 'performedBy',
             model: User,
-            select: { name: 1, email: 1, initial: 1 },
+            select: { name: 1, email: 1 },
           },
         ])
         .sort({ performedAt: -1 });
 
+      const activitiesData = activities.map(activity => activity.getData());
       // await new Promise(resolve => setTimeout(resolve, 5000));
-      return { data: activities };
+      return { data: activitiesData };
     }
     catch (error) {
       throw createError({
         statusCode: error.statusCode || 500,
-        message: error.message || 'Terjadi kesalahan pada server',
+        message: error.message || 'Terjadi kesalahan memuat aktivitas',
       });
     }
   },
