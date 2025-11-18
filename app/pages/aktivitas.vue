@@ -1,4 +1,4 @@
-<!-- app/pages/aktifitas.vue -->
+<!-- app/pages/aktivitas.vue -->
 
 <script setup>
 import { Activity } from 'lucide-vue-next';
@@ -37,6 +37,15 @@ function getStatusLabel(status) {
   return statusLabels[status] || status;
 }
 
+function getCollectionLabel(collectionName) {
+  const collectionLabels = {
+    Branch: 'Cabang',
+    User: 'Pengguna',
+    Activity: 'Aktivitas',
+  };
+  return collectionLabels[collectionName] || collectionName;
+}
+
 onMounted(async () => {
   await activityStore.fetchActivities();
 });
@@ -73,8 +82,9 @@ onMounted(async () => {
       <activity-filters />
     </div>
 
+    <!-- Loading State -->
     <div
-      v-if="activityStore.status === 'pending'"
+      v-if="activityStore.loading"
       class="h-[60vh] flex items-center justify-center"
     >
       <div class="flex items-center space-x-2">
@@ -83,12 +93,13 @@ onMounted(async () => {
       </div>
     </div>
 
+    <!-- Error State -->
     <handler-error
-      v-if="activityStore.error"
-      :error="activityStore.error.data.message"
-      class="max-w-md"
+      v-else-if="activityStore.error"
+      :message="activityStore.error"
     />
 
+    <!-- Empty State -->
     <div
       v-else-if="activityStore.activities.length === 0"
       class="h-[60vh] flex items-center"
@@ -106,7 +117,8 @@ onMounted(async () => {
       </Empty>
     </div>
 
-    <div v-else class="flex gap-8">
+    <!-- Data State -->
+    <div v-else class="flex">
       <div class="w-1/2">
         <div class="flex flex-col space-y-6">
           <div
@@ -129,41 +141,55 @@ onMounted(async () => {
                 <TableRow
                   v-for="activity in activityStore.groupedActivities[date]"
                   :key="activity._id"
-                  class="cursor-pointer hover:bg-muted/50 transition-colors" :class="[
+                  class="cursor-pointer hover:bg-muted/50 transition-colors"
+                  :class="[
                     selectedActivity?._id === activity._id ? 'bg-muted' : '',
                   ]"
                   @click="selectActivity(activity)"
                 >
                   <TableCell class="py-3">
-                    <div class="flex items-center space-x-3">
-                      <div class="flex-1 min-w-0">
-                        <div class="flex items-center space-x-2">
-                          <div class="font-medium text-sm">
-                            {{ activity.performedBy?.name || 'Tidak diketahui' }}
-                          </div>
-                          <div class="text-muted-foreground">
-                            &bull;
-                          </div>
-                          <div class="text-muted-foreground">
-                            <NuxtTime
-                              :datetime="activity.performedAt"
-                              locale="id-ID"
-                              relative
-                            />
-                          </div>
+                    <div class="flex-1 min-w-0">
+                      <!-- Header dengan nama pengguna dan waktu -->
+                      <div class="flex items-center space-x-2 mb-1">
+                        <div class="font-medium text-sm">
+                          {{ activity.performedBy?.name || 'Tidak diketahui' }}
                         </div>
-                        <div class="flex space-x-2 text-muted-foreground mt-1">
-                          <div :class="activity.action === 'LOGIN_ATTEMPT' || activity.action === 'SOFT_DELETE' || activity.action === 'DELETE' ? 'text-red-500' : 'text-blue-500'">
-                            {{ getActionLabel(activity.action) }}
-                          </div>
-                          <div>pada pukul</div>
+                        <div class="text-muted-foreground text-xs">
+                          &bull;
+                        </div>
+                        <div class="text-muted-foreground text-xs">
                           <NuxtTime
                             :datetime="activity.performedAt"
                             locale="id-ID"
-                            hour="2-digit"
-                            minute="2-digit"
+                            relative
                           />
                         </div>
+                      </div>
+
+                      <!-- Detail aksi -->
+                      <div class="flex flex-wrap items-center gap-2 text-sm">
+                        <span
+                          class="font-medium"
+                          :class="activity.action === 'LOGIN_ATTEMPT' || activity.action === 'DELETE' || activity.action === 'SOFT_DELETE' ? 'text-red-500' : ''"
+                        >
+                          {{ getActionLabel(activity.action) }}
+                        </span>
+
+                        <span v-if="activity.action === 'CREATE' || activity.action === 'UPDATE' || activity.action === 'DELETE' || activity.action === 'SOFT_DELETE'" class="flex gap-2">
+                          <span class="text-muted-foreground">data</span>
+                          <span class="font-medium">
+                            {{ getCollectionLabel(activity.collectionName) }}
+                          </span>
+                        </span>
+
+                        <span class="text-muted-foreground">pada pukul</span>
+                        <NuxtTime
+                          :datetime="activity.performedAt"
+                          locale="id-ID"
+                          hour="2-digit"
+                          minute="2-digit"
+                          class="text-muted-foreground"
+                        />
                       </div>
                     </div>
                   </TableCell>
@@ -179,26 +205,44 @@ onMounted(async () => {
           <Card v-if="selectedActivity">
             <CardHeader>
               <CardTitle class="flex items-center space-x-2">
-                <span>Detail Aktivitas</span>
+                <div>Detail Aktivitas</div>
                 <Badge
+                  v-if="selectedActivity.additionalInfo?.status"
                   :variant="selectedActivity.additionalInfo?.status === 'SUCCESS' ? 'default' : 'destructive'"
                 >
                   {{ getStatusLabel(selectedActivity.additionalInfo?.status) }}
                 </Badge>
+                <Badge
+                  v-else
+                  :variant="selectedActivity.action === 'SOFT_DELETE' ? 'destructive' : 'default'"
+                >
+                  {{ getActionLabel(selectedActivity.action) }}
+                </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent class="space-y-4">
+            <CardContent class="space-y-6">
               <!-- Informasi Dasar -->
-              <div class="space-y-3">
+              <div class="space-y-4">
                 <div class="grid grid-cols-2 gap-4">
                   <div>
                     <div class="text-sm font-medium text-muted-foreground">
                       Aksi
                     </div>
-                    <div class="text-sm">
+                    <div class="text-sm font-medium">
                       {{ getActionLabel(selectedActivity.action) }}
                     </div>
                   </div>
+                  <div>
+                    <div class="text-sm font-medium text-muted-foreground">
+                      Tipe Data
+                    </div>
+                    <div class="text-sm font-medium">
+                      {{ getCollectionLabel(selectedActivity.collectionName) }}
+                    </div>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
                   <div>
                     <div class="text-sm font-medium text-muted-foreground">
                       Waktu
@@ -215,74 +259,70 @@ onMounted(async () => {
                       />
                     </div>
                   </div>
+                  <div>
+                    <div class="text-sm font-medium text-muted-foreground">
+                      ID Dokumen
+                    </div>
+                    <div class="text-sm font-mono text-xs">
+                      {{ selectedActivity.documentId }}
+                    </div>
+                  </div>
                 </div>
+              </div>
 
-                <!-- Informasi Pengguna -->
-                <div v-if="selectedActivity.performedBy">
-                  <div class="text-sm font-medium text-muted-foreground mb-2">
-                    Pengguna
+              <!-- Informasi Pengguna -->
+              <div v-if="selectedActivity.performedBy" class="border-t pt-4">
+                <div class="text-sm font-medium text-muted-foreground mb-3">
+                  Pengguna
+                </div>
+                <div class="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <div class="text-muted-foreground">
+                      Nama
+                    </div>
+                    <div class="font-medium">
+                      {{ selectedActivity.performedBy.name }}
+                    </div>
                   </div>
-                  <div class="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div class="text-muted-foreground">
-                        Nama
-                      </div>
-                      <div>{{ selectedActivity.performedBy.name }}</div>
+                  <div>
+                    <div class="text-muted-foreground">
+                      Email
                     </div>
-                    <div>
-                      <div class="text-muted-foreground">
-                        Email
-                      </div>
-                      <div>{{ selectedActivity.performedBy.email }}</div>
-                    </div>
+                    <div>{{ selectedActivity.performedBy.email }}</div>
                   </div>
                 </div>
+              </div>
 
-                <!-- Informasi Teknis -->
-                <div>
-                  <div class="text-sm font-medium text-muted-foreground mb-2">
-                    Informasi Teknis
-                  </div>
-                  <div class="space-y-2 text-sm">
-                    <div>
-                      <div class="text-muted-foreground">
-                        IP Address
-                      </div>
-                      <div>{{ selectedActivity.ipAddress }}</div>
-                    </div>
-                    <div>
-                      <div class="text-muted-foreground">
-                        User Agent
-                      </div>
-                      <div class="text-xs font-mono bg-muted p-2 rounded break-all">
-                        {{ selectedActivity.userAgent }}
-                      </div>
-                    </div>
-                  </div>
+              <!-- Perubahan Data -->
+              <div
+                v-if="selectedActivity.changes && selectedActivity.changes.newData"
+                class="border-t pt-4"
+              >
+                <div class="text-sm font-medium text-muted-foreground mb-3">
+                  Perubahan Data
                 </div>
+                <pre class="text-xs font-mono bg-muted p-2 rounded overflow-auto max-h-60">{{ JSON.stringify(selectedActivity.changes.newData, null, 2) }}</pre>
+              </div>
 
-                <!-- Perubahan Data -->
-                <div v-if="selectedActivity.changes && selectedActivity.changes.updatedFields.length > 0">
-                  <div class="text-sm font-medium text-muted-foreground mb-2">
-                    Perubahan Data
-                  </div>
-                  <div class="space-y-2 text-sm">
-                    <div v-for="(changes, changeType) in selectedActivity.changes" :key="changeType">
-                      <div class="text-muted-foreground capitalize">
-                        {{ changeType.replace(/([A-Z])/g, ' $1').trim() }}
-                      </div>
-                      <pre class="max-h-40 text-xs font-mono bg-muted p-2 rounded overflow-auto">{{ JSON.stringify(changes, null, 2) }}</pre>
-                    </div>
-                  </div>
+              <div
+                v-if="selectedActivity.changes && selectedActivity.changes.updatedFields.length"
+                class="border-t pt-4"
+              >
+                <div class="text-sm font-medium text-muted-foreground mb-3">
+                  Field yang berubah
                 </div>
+                <pre class="text-xs font-mono bg-muted p-2 rounded overflow-auto max-h-60">{{ JSON.stringify(selectedActivity.changes.updatedFields, null, 2) }}</pre>
+              </div>
 
-                <!-- Informasi Tambahan -->
-                <div v-if="selectedActivity.additionalInfo">
-                  <div class="text-sm font-medium text-muted-foreground mb-2">
-                    Informasi Tambahan
-                  </div>
-                  <pre class="max-h-40 text-xs bg-muted p-2 rounded overflow-auto">{{ JSON.stringify(selectedActivity.additionalInfo, null, 2) }}</pre>
+              <!-- Informasi Tambahan -->
+              <div
+                v-if="selectedActivity.additionalInfo && Object.keys(selectedActivity.additionalInfo).length > 0"
+                class="border-t pt-4"
+              >
+                <div class="text-sm font-medium text-muted-foreground mb-3">
+                  Informasi Tambahan
                 </div>
+                <pre class="text-xs bg-muted p-3 rounded overflow-auto max-h-32">{{ JSON.stringify(selectedActivity.additionalInfo, null, 2) }}</pre>
               </div>
             </CardContent>
           </Card>
