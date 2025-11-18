@@ -91,8 +91,8 @@ const applyFilters = handleSubmit(async (formValues) => {
     <Dialog v-model:open="isOpen">
       <DialogTrigger as-child>
         <Button variant="outline">
-          <Funnel size="16" />
-          <div>Filters</div>
+          <Funnel />
+          <div>Filter</div>
         </Button>
       </DialogTrigger>
 
