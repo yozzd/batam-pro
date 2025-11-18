@@ -52,6 +52,23 @@ const schema = new mongoose.Schema(
   },
 );
 
+schema.methods.getData = function () {
+  return {
+    _id: this._id,
+    action: this.action,
+    collectionName: this.collectionName,
+    documentId: this.documentId,
+    changes: this.changes,
+    performedBy: this.performedBy,
+    performedAt: this.performedAt,
+    ipAddress: this.ipAddress,
+    userAgent: this.userAgent,
+    additionalInfo: this.additionalInfo,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt,
+  };
+};
+
 // Create indexes
 schema.index({ collectionName: 1, documentId: 1 });
 schema.index({ performedBy: 1 });
