@@ -13,30 +13,36 @@ const useActivityStore = defineStore('activity', () => {
 
   const today = dayjs().format('YYYY-MM-DD');
 
+  const activities = ref([]);
+  const loading = ref(false);
+  const error = ref(null);
   const currentFilters = ref({
     startDate: today,
     endDate: today,
   });
 
-  const {
-    data: activitiesData,
-    execute: getActivities,
-    error,
-    status,
-  } = useFetch('/api/activity', {
-    method: 'GET',
-    headers: headers.value,
-    immediate: false,
-    query: currentFilters,
-  });
-
-  const activities = computed(() => {
-    return activitiesData.value?.data || [];
-  });
-
   const fetchActivities = async (filters = { startDate: today, endDate: today }) => {
-    currentFilters.value = { ...filters };
-    await getActivities();
+    error.value = null;
+    loading.value = true;
+
+    try {
+      // Update filters sebelum fetch
+      currentFilters.value = { ...filters };
+
+      const response = await $fetch('/api/activity', {
+        method: 'GET',
+        headers: headers.value,
+        query: currentFilters.value,
+      });
+
+      activities.value = response.data || [];
+    }
+    catch (err) {
+      error.value = err.data?.message;
+    }
+    finally {
+      loading.value = false;
+    }
   };
 
   const groupedActivities = computed(() => {
@@ -67,18 +73,26 @@ const useActivityStore = defineStore('activity', () => {
   });
 
   const resetCurrentFilters = () => {
-    currentFilters.value = {};
+    currentFilters.value = {
+      startDate: today,
+      endDate: today,
+    };
+  };
+
+  const clearError = () => {
+    error.value = null;
   };
 
   return {
     activities,
+    loading,
     error,
-    status,
+    currentFilters,
     fetchActivities,
     groupedActivities,
     sortedGroupDates,
-    currentFilters,
     resetCurrentFilters,
+    clearError,
   };
 });
 
